@@ -49,10 +49,17 @@ RUN python3 -m pip install pip --upgrade
 # HF
 ENV HF_HOME=/workspace/huggingface
 
-RUN pip3 install "huggingface_hub[cli]"
+RUN pip3 install "huggingface_hub>=0.14.1"
 
 # WanDB
 RUN pip3 install wandb
+
+# Optional: If WANDB_TOKEN is not provided, skip logging in
+RUN if [ -z "$WANDB_TOKEN" ]; then \
+            echo "WANDB_TOKEN not set; skipping login"; \
+        else \
+            wandb login "$WANDB_TOKEN"; \
+        fi
 
 # Clone SimpleTuner
 RUN git clone https://github.com/bghira/SimpleTuner --branch release

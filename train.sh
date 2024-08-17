@@ -62,6 +62,7 @@ if [ -z "${TRAINING_DYNAMO_BACKEND}" ]; then
     printf "TRAINING_DYNAMO_BACKEND not set, defaulting to 'no'.\n"
     TRAINING_DYNAMO_BACKEND=no
 fi
+
 # Check that the rest of the parameters are not blank:
 if [ -z "${MODEL_NAME}" ]; then
     printf "MODEL_NAME not set, exiting.\n"
@@ -105,14 +106,6 @@ if [ -z "${VALIDATION_PROMPT}" ]; then
 fi
 if [ -z "${VALIDATION_GUIDANCE}" ]; then
     printf "VALIDATION_GUIDANCE not set, exiting.\n"
-    exit 1
-fi
-if [ -z "${VALIDATION_GUIDANCE_REAL}" ]; then
-    printf "VALIDATION_GUIDANCE_REAL not set, defaulting to 1.0.\n"
-    export VALIDATION_GUIDANCE_REAL=1.0
-fi
-if [ -z "${VALIDATION_NO_CFG_UNTIL_TIMESTEP}" ]; then
-    printf "VALIDATION_NO_CFG_UNTIL_TIMESTEP not set, exiting.\n"
     exit 1
 fi
 if [ -z "${VALIDATION_GUIDANCE_RESCALE}" ]; then
@@ -201,13 +194,6 @@ if [ -n "$SMOLDIT" ] && [[ "$SMOLDIT" == "true" ]]; then
 fi
 if [ -n "$FLUX" ] && [[ "$FLUX" == "true" ]]; then
     export TRAINER_EXTRA_ARGS="${TRAINER_EXTRA_ARGS} --flux"
-    # if --flux_guidance_value is in TRAINER_EXTRA_ARGS, we will not add it again.
-    if [[ "${TRAINER_EXTRA_ARGS}" != *"--flux_guidance_value"* ]]; then
-        export TRAINER_EXTRA_ARGS="${TRAINER_EXTRA_ARGS} --flux_guidance_value=${FLUX_GUIDANCE_VALUE}"
-    fi
-    if [[ "${TRAINER_EXTRA_ARGS}" != *"--flux_lora_target"* ]]; then
-        export TRAINER_EXTRA_ARGS="${TRAINER_EXTRA_ARGS} --flux_lora_target=${FLUX_LORA_TARGET}"
-    fi
 fi
 
 
@@ -349,7 +335,6 @@ if [ -n "$CONTROLNET" ] && [[ "$CONTROLNET" == "true" ]]; then
     export CONTROLNET_ARGS="--controlnet"
 fi
 
-
 # Run the training script.
 accelerate launch ${ACCELERATE_EXTRA_ARGS} --mixed_precision="${MIXED_PRECISION}" --num_processes="${TRAINING_NUM_PROCESSES}" --num_machines="${TRAINING_NUM_MACHINES}" --dynamo_backend="${TRAINING_DYNAMO_BACKEND}" train.py \
     --model_type="${MODEL_TYPE}" ${DORA_ARGS} --pretrained_model_name_or_path="${MODEL_NAME}" ${XFORMERS_ARG} ${GRADIENT_ARG} --set_grads_to_none --gradient_accumulation_steps=${GRADIENT_ACCUMULATION_STEPS} \
@@ -358,7 +343,7 @@ accelerate launch ${ACCELERATE_EXTRA_ARGS} --mixed_precision="${MIXED_PRECISION}
     ${OPTIMIZER_ARG} --learning_rate="${LEARNING_RATE}" --lr_scheduler="${LR_SCHEDULE}" --seed "${TRAINING_SEED}" --lr_warmup_steps="${LR_WARMUP_STEPS}" \
     --output_dir="${OUTPUT_DIR}" ${BITFIT_ARGS} ${ASPECT_BUCKET_ROUNDING_ARGS} \
     --inference_scheduler_timestep_spacing="${INFERENCE_SCHEDULER_TIMESTEP_SPACING}" --training_scheduler_timestep_spacing="${TRAINING_SCHEDULER_TIMESTEP_SPACING}" \
-    ${DEBUG_EXTRA_ARGS}	${TF32_ARG} --mixed_precision="${MIXED_PRECISION}" ${TRAINER_EXTRA_ARGS} \
+    ${DEBUG_EXTRA_ARGS} ${TF32_ARG} --mixed_precision="${MIXED_PRECISION}" ${TRAINER_EXTRA_ARGS} \
     --train_batch="${TRAIN_BATCH_SIZE}" --max_workers=$MAX_WORKERS --read_batch_size=$READ_BATCH_SIZE --write_batch_size=$WRITE_BATCH_SIZE --caption_dropout_probability=${CAPTION_DROPOUT_PROBABILITY} \
     --torch_num_threads=${TORCH_NUM_THREADS} --image_processing_batch_size=${IMAGE_PROCESSING_BATCH_SIZE} --vae_batch_size=$VAE_BATCH_SIZE \
     --validation_prompt="${VALIDATION_PROMPT}" --num_validation_images=1 --validation_num_inference_steps="${VALIDATION_NUM_INFERENCE_STEPS}" ${VALIDATION_ARGS} \
@@ -366,6 +351,6 @@ accelerate launch ${ACCELERATE_EXTRA_ARGS} --mixed_precision="${MIXED_PRECISION}
     --resolution_type="${RESOLUTION_TYPE}" \
     --checkpointing_steps="${CHECKPOINTING_STEPS}" --checkpoints_total_limit="${CHECKPOINTING_LIMIT}" \
     --validation_steps="${VALIDATION_STEPS}" --tracker_run_name="${TRACKER_RUN_NAME}" --tracker_project_name="${TRACKER_PROJECT_NAME}" \
-    --validation_guidance="${VALIDATION_GUIDANCE}" --validation_guidance_real="${VALIDATION_GUIDANCE_REAL}" --validation_guidance_rescale="${VALIDATION_GUIDANCE_RESCALE}" --validation_negative_prompt="${VALIDATION_NEGATIVE_PROMPT}" ${EMA_ARGS} ${CONTROLNET_ARGS}
+    --validation_guidance="${VALIDATION_GUIDANCE}" --validation_guidance_rescale="${VALIDATION_GUIDANCE_RESCALE}" --validation_negative_prompt="${VALIDATION_NEGATIVE_PROMPT}" ${EMA_ARGS} ${CONTROLNET_ARGS}
 
 exit 0
